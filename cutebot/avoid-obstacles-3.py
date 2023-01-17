@@ -11,7 +11,7 @@ right = 0x08
 
 
 class CUTEBOT(object):
-     def __init__(self):
+    def __init__(self):
         i2c.init()
         self.__pin_e = pin12
         self.__pin_t = pin8
@@ -91,7 +91,7 @@ def turn_random(ct):
 
 
 index = 0
-cb_size = 100
+cb_size = 20
 
 movement = []
 
@@ -126,7 +126,7 @@ def go_fast(ct):
     ct.set_car_light(right, 0, 255, 0)
     color_fill(np, (0, 255, 0), 0)
     color_fill(np, (0, 255, 0), 1)
-    return 0
+    return 0, None
 
 
 def should_go_slow(distance):
@@ -140,7 +140,7 @@ def go_slow(ct):
     ct.set_car_light(right, 0, 0, 255)
     color_fill(np, (0, 0, 255), 0)
     color_fill(np, (0, 0, 255), 1)
-    return 0
+    return 0, None
 
 
 def should_turn(distance):
@@ -150,19 +150,26 @@ def should_turn(distance):
 def turn(ct):
     display.show("O")
     turn_random(ct)
-    current_action = turning
-    return utime.ticks_add(utime.ticks_ms(), 200)
+    return random.randint(200, 600), None
 
 
-none = 0
-turning = 1
-straight_fast = 2
-straight_slow = 3
-backwards = 4
+def should_go_backward(distance):
+    if 0 < accelerometer.get_z() < 50:
+        add_new_movement(False)
+    else:
+        add_new_movement(True)
+    return not any_movement()
 
-current_action = none
-action_end = 0
-z_strength = -1000
+
+def go_backward(ct):
+    ct.set_car_light(left, 255, 0, 0)
+    ct.set_car_light(right, 255, 0, 0)
+    ct.set_motors_speed(-20, -20)
+    color_fill(np, (255, 0, 0), 0)
+    color_fill(np, (255, 0, 0), 1)
+    display.show("B")
+    return 1000, turn
+
 
 if __name__ == '__main__':
     ct = CUTEBOT()
@@ -175,48 +182,24 @@ if __name__ == '__main__':
     display.scroll("OK")
 
     actions = [
+        (should_go_backward, go_backward),
         (should_go_fast, go_fast),
         (should_go_slow, go_slow),
         (should_turn, turn)
     ]
-
+    action_end = 0
+    z_strength = -1000
+    next_action = None
     while(True):
         if utime.ticks_diff(action_end, utime.ticks_ms()) > 0:
             continue
-
-        if current_action == backwards:
-            display.show("X")
-            if utime.ticks_diff(action_end, utime.ticks_ms()) > 0:
-                display.show("b")
-                continue
-            else:
-                turn_random()
-                display.show("t")
-                current_action = turning
-                action_end = utime.ticks_add(utime.ticks_ms(), 200)
-                continue
+        duration = 0
+        if next_action:
+            duration, next_action = next_action(ct)
         else:
-            if 0 < accelerometer.get_z() < 50:
-                add_new_movement(False)
-            else:
-                add_new_movement(True)
-
-        if not any_movement():
-            ct.set_car_light(left, 255, 0, 0)
-            ct.set_car_light(right, 255, 0, 0)
-            ct.set_motors_speed(-20, -20)
-            color_fill(np, (255, 0, 0), 0)
-            color_fill(np, (255, 0, 0), 1)
-            action_end = utime.ticks_add(utime.ticks_ms(), 500)
-            current_action = backwards
-            display.show("B")
-            movement = []
-            continue
-
-        distance = ct.get_distance()
-        for is_applicable, action in actions:
-            if is_applicable(distance):
-                tmp = action(ct)
-                if tmp:
-                    action_end = tmp
-                break
+            distance = ct.get_distance()
+            for is_applicable, action in actions:
+                if is_applicable(distance):
+                    duration, next_action = action(ct)
+                    break
+        action_end = utime.ticks_add(utime.ticks_ms(), duration)
