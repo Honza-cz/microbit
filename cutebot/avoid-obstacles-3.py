@@ -90,6 +90,22 @@ def turn_random(ct):
         color_fill(np, (0, 0, 255), 1)
 
 
+def turn_left(ct):
+    ct.set_motors_speed(-25, 25)
+    ct.set_car_light(left, 0, 0, 255)
+    ct.set_car_light(right, 0, 255, 0)
+    color_fill(np, (0, 0, 255), 0)
+    color_fill(np, (0, 255, 0), 1)
+
+
+def turn_right(ct):
+    ct.set_motors_speed(25, -25)
+    ct.set_car_light(left, 0, 255, 0)
+    ct.set_car_light(right, 0, 0, 255)
+    color_fill(np, (0, 255, 0), 0)
+    color_fill(np, (0, 0, 255), 1)
+
+
 index = 0
 cb_size = 20
 
@@ -116,41 +132,44 @@ def color_fill(np, rgb, d):
 
 
 def should_go_fast(distance):
-    return distance > 50
+    return distance > 70
 
 
-def go_fast(ct):
-    display.show("R")
+def go_fast(ct, last_action):
     ct.set_motors_speed(50, 50)
+
     ct.set_car_light(left, 0, 255, 0)
     ct.set_car_light(right, 0, 255, 0)
     color_fill(np, (0, 255, 0), 0)
     color_fill(np, (0, 255, 0), 1)
-    return 0, None
+    return 0, None, None
 
 
 def should_go_slow(distance):
     return 50 > distance > 20
 
 
-def go_slow(ct):
-    display.show("P")
+def go_slow(ct, last_action):
     ct.set_motors_speed(20, 20)
     ct.set_car_light(left, 0, 0, 255)
     ct.set_car_light(right, 0, 0, 255)
     color_fill(np, (0, 0, 255), 0)
     color_fill(np, (0, 0, 255), 1)
-    return 0, None
+    return 0, None, None
 
 
 def should_turn(distance):
     return distance < 20
 
 
-def turn(ct):
-    display.show("O")
-    turn_random(ct)
-    return random.randint(200, 600), None
+def turn(ct, last_action):
+    if last_action != turn:
+        if random.getrandbits(1):
+            turn_left(ct)
+        else:
+            turn_right(ct)
+
+    return random.randint(100, 300), turn, should_turn
 
 
 def should_go_backward(distance):
@@ -161,14 +180,13 @@ def should_go_backward(distance):
     return not any_movement()
 
 
-def go_backward(ct):
+def go_backward(ct, last_action):
     ct.set_car_light(left, 255, 0, 0)
     ct.set_car_light(right, 255, 0, 0)
     ct.set_motors_speed(-20, -20)
     color_fill(np, (255, 0, 0), 0)
     color_fill(np, (255, 0, 0), 1)
-    display.show("B")
-    return 1000, turn
+    return 1000, turn, lambda x: True
 
 
 if __name__ == '__main__':
@@ -190,16 +208,20 @@ if __name__ == '__main__':
     action_end = 0
     z_strength = -1000
     next_action = None
+    last_action = None
+    should_next_action = None
     while(True):
+        distance = ct.get_distance()
         if utime.ticks_diff(action_end, utime.ticks_ms()) > 0:
             continue
         duration = 0
-        if next_action:
-            duration, next_action = next_action(ct)
+        if next_action and should_next_action and should_next_action(distance):
+            duration, next_action, should_next_action = next_action(ct, last_action)
+            last_action = next_action
         else:
-            distance = ct.get_distance()
             for is_applicable, action in actions:
                 if is_applicable(distance):
-                    duration, next_action = action(ct)
+                    duration, next_action, should_next_action = action(ct, last_action)
+                    last_action = action
                     break
         action_end = utime.ticks_add(utime.ticks_ms(), duration)
