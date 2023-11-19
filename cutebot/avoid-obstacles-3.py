@@ -131,7 +131,7 @@ def color_fill(np, rgb, d):
     np.show()
 
 
-def should_go_fast(distance):
+def should_go_fast(ct, distance):
     return distance > 70
 
 
@@ -145,7 +145,7 @@ def go_fast(ct, last_action):
     return 0, None, None
 
 
-def should_go_slow(distance):
+def should_go_slow(ct, distance):
     return 50 > distance > 20
 
 
@@ -158,7 +158,7 @@ def go_slow(ct, last_action):
     return 0, None, None
 
 
-def should_turn(distance):
+def should_turn(ct, distance):
     return distance < 20
 
 
@@ -172,8 +172,8 @@ def turn(ct, last_action):
     return random.randint(100, 300), turn, should_turn
 
 
-def should_go_backward(distance):
-    if 0 < accelerometer.get_z() < 50:
+def should_go_backward(ct, distance):
+    if 0 < accelerometer.get_z() < 50 or ct.get_tracking() == 11:
         add_new_movement(False)
     else:
         add_new_movement(True)
@@ -186,7 +186,7 @@ def go_backward(ct, last_action):
     ct.set_motors_speed(-20, -20)
     color_fill(np, (255, 0, 0), 0)
     color_fill(np, (255, 0, 0), 1)
-    return 1000, turn, lambda x: True
+    return 1000, turn, lambda x, y: True
 
 
 if __name__ == '__main__':
@@ -215,12 +215,12 @@ if __name__ == '__main__':
         if utime.ticks_diff(action_end, utime.ticks_ms()) > 0:
             continue
         duration = 0
-        if next_action and should_next_action and should_next_action(distance):
+        if next_action and should_next_action and should_next_action(ct, distance):
             duration, next_action, should_next_action = next_action(ct, last_action)
             last_action = next_action
         else:
             for is_applicable, action in actions:
-                if is_applicable(distance):
+                if is_applicable(ct, distance):
                     duration, next_action, should_next_action = action(ct, last_action)
                     last_action = action
                     break
