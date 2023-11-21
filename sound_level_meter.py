@@ -29,16 +29,24 @@ def diod_light_rand():
         return 0
 
 
-def rgb_diods():
-    r = diod_light_rand()
-    g = diod_light_rand()
-    b = diod_light_rand()
+one_step = 10
+
+
+def rgb_diods(mic_level):
+    div = 1
+    if mic_level < one_step * 10:
+        div = 20
+    elif one_step < mic_level < 5 * one_step:
+        div = 10
+    else:
+        div = 1
+
+    r = diod_light_rand() // div
+    g = diod_light_rand() // div
+    b = diod_light_rand() // div
 
     for i in range(6):
         color_fill(np, (r, g, b), i)
-
-
-one_step = 10
 
 
 def diods5x5(mic_level):
@@ -91,7 +99,7 @@ if __name__ == '__main__':
             reset_counter = 1
             if counter % 30 == 0:
                 counter = 1
-                rgb_diods()
+                rgb_diods(mic_level)
             else:
                 counter += 1
             diods5x5(mic_level)
