@@ -3,6 +3,8 @@ from microbit import *
 import neopixel
 import random
 import time
+import log
+import math
 
 main_colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (128, 255, 0), (0, 255, 0), (0, 255, 128),
                (0, 255, 255), (0, 128, 255), (0, 0, 255), (128, 0, 255), (255, 0, 255), (255, 0, 128)]
@@ -87,7 +89,7 @@ def glow(np, context):
 
 def glow_colored(np, context):
     if not context:
-        context = (True, 0, 0, (0, 0, 0), (255, 0, 0), 10)
+        context = (True, 0, 0, (0, 0, 0), rand_rgb_max(0), 10)
 
     regular, last_time_tick, rgb_index, rgb, rgb_max, wait_time = context
     r, g, b = rgb
@@ -114,35 +116,26 @@ def glow_colored(np, context):
         if regular:
             if c + 1 <= 255:
                 c += 1
-                r, g, b = increment_till_max(rgb, rgb_max)
+                r, g, b = increment_till_max(c, rgb, rgb_max)
 
             else:
                 regular = not regular
                 wait_time = 1000
                 c -= 1
-                r, g, b = decrement_till_min(rgb, (0, 0, 0))
+                r, g, b = decrement_till_min(c, rgb_max)
         else:
             if c - 1 >= 0:
                 c -= 1
-                r, g, b = decrement_till_min(rgb, (0, 0, 0))
+                r, g, b = decrement_till_min(c, rgb_max)
             else:
                 regular = not regular
                 c = 1
-                r, g, b = increment_till_max(rgb, rgb_max)
+                r, g, b = increment_till_max(c, rgb, rgb_max)
                 if (rgb_index + 1) < 2:
                     rgb_index += 1
                 else:
                     rgb_index = 0
-                    all_indexes = [0, 1, 2]
-                    del all_indexes[rgb_index]
-
-                    rnd_color_index = random.choice(all_indexes)
-                    if (rnd_color_index == 0):
-                        rgb_max = (random.randint(0, 255), 0, 0)
-                    elif (rnd_color_index == 1):
-                        rgb_max = (0, random.randint(0, 255), 0)
-                    else:
-                        rgb_max = (0, 0, random.randint(0, 255))
+                rgb_max = rand_rgb_max(rgb_index)
         if (rgb_index == 0):
             r = c
         elif (rgb_index == 1):
@@ -155,25 +148,46 @@ def glow_colored(np, context):
     return (regular, last_time_tick, rgb_index, (r, g, b), rgb_max, wait_time)
 
 
-def increment_till_max(rgb, rgb_max):
-    r = (rgb[0] + 1) if (rgb[0] + 1) <= rgb_max[0] else rgb[0]
-    g = (rgb[1] + 1) if (rgb[1] + 1) <= rgb_max[1] else rgb[1]
-    b = (rgb[2] + 1) if (rgb[2] + 1) <= rgb_max[2] else rgb[2]
+def rand_rgb_max(rgb_index):
+    all_indexes = [0, 1, 2]
+    del all_indexes[rgb_index]
+
+    rnd_color_index = random.choice(all_indexes)
+    if (rnd_color_index == 0):
+        return (random.randint(0, 255), 0, 0)
+    elif (rnd_color_index == 1):
+        return (0, random.randint(0, 255), 0)
+    else:
+        return (0, 0, random.randint(0, 255))
+
+
+def increment_till_max(c, rgb, rgb_max):
+    rdelta = int(c * (rgb_max[0] / 255))
+    gdelta = int(c * (rgb_max[1] / 255))
+    bdelta = int(c * (rgb_max[2] / 255))
+
+    r = (rgb[0] + rdelta) if (rgb[0] + rdelta) <= rgb_max[0] else rgb[0]
+    g = (rgb[1] + gdelta) if (rgb[1] + gdelta) <= rgb_max[1] else rgb[1]
+    b = (rgb[2] + bdelta) if (rgb[2] + bdelta) <= rgb_max[2] else rgb[2]
     return (r, g, b)
 
 
-def decrement_till_min(rgb, rgb_min):
-    r = (rgb[0] - 1) if (rgb[0] - 1) >= rgb_min[0] else rgb[0]
-    g = (rgb[1] - 1) if (rgb[1] - 1) >= rgb_min[1] else rgb[1]
-    b = (rgb[2] - 1) if (rgb[2] - 1) >= rgb_min[2] else rgb[2]
-    return (r, g, b)
+def decrement_till_min(c, rgb_max):
+    if (c == 0):
+        return (0, 0, 0)
+
+    rdelta = rgb_max[0] / 255
+    gdelta = rgb_max[1] / 255
+    bdelta = rgb_max[2] / 255
+
+    return (int(c * rdelta), int(c * gdelta), int(c * bdelta))
 
 
 def rocket_explosion(np, context, colors):
     if not context:
-        context = (0, 0, random.choice(colors), False)
+        context = (0, 0, random.choice(colors), False, 500)
 
-    index, last_time_tick, color, burn_mode = context
+    index, last_time_tick, color, burn_mode, delay = context
 
     current_time_ms = time.ticks_ms()
 
@@ -182,7 +196,9 @@ def rocket_explosion(np, context, colors):
         for i in range(6):
             np[i] = color
         burn_mode = False
-    elif current_time_ms > (last_time_tick + 500):
+        delay = 2000
+    elif current_time_ms > (last_time_tick + delay):
+        delay = 500
         last_time_tick = current_time_ms
         for i in range(6):
             np[i] = (0, 0, 0)
@@ -200,7 +216,7 @@ def rocket_explosion(np, context, colors):
 
     np.show()
 
-    return (index, last_time_tick, color, burn_mode)
+    return (index, last_time_tick, color, burn_mode, delay)
 
 
 def light_on_one_by_one(context):
@@ -276,7 +292,7 @@ def main():
 
     while(True):
 
-        if (last_switched + 30000) < time.ticks_ms():
+        if (last_switched + 60000) < time.ticks_ms():
 
             sleep(200)
             context = None
