@@ -218,6 +218,38 @@ def rocket_explosion(np, context, colors):
 
     return (index, last_time_tick, color, burn_mode, delay)
 
+def burn_min_max(np, context):
+
+    random_color_picker = lambda : main_colors[random.randint(0,len(main_colors)-1)]
+    mode_inc=1
+    mode_dec=-1
+    if not context:
+        context = (0, 20, 0, 1, random_color_picker())
+
+    last_time_tick, delay, single_color, mode, color_burn = context
+    current_time_ms = time.ticks_ms()
+
+    if (current_time_ms>last_time_tick+delay):
+        last_time_tick=current_time_ms
+        
+        rate = lambda idx: color_burn[idx]/255
+        single_color= single_color + mode
+
+        single_color_or_none = lambda idx :int(single_color*rate(idx))
+        
+        color = (single_color_or_none(0), single_color_or_none(1), single_color_or_none(2))
+        for i in range(len(np)):
+            np[i] = color
+        np.show()
+
+        if (single_color>254):
+            mode = mode_inc
+        if (single_color<1):
+            mode = mode_dec
+            color_burn=random_color_picker()
+
+    return (last_time_tick, delay, single_color, mode, color_burn)
+
 
 def light_on_one_by_one(context):
     if not context:
@@ -282,7 +314,8 @@ def main():
         lambda ctx: rocket_explosion(np, ctx, main_colors),
         lambda ctx: glow(np, ctx),
         lambda ctx: glow_colored(np, ctx),
-        lambda ctx: basic(np, ctx, main_colors + [(0, 0, 0)])
+        lambda ctx: basic(np, ctx, main_colors + [(0, 0, 0)]),
+        lambda ctx: burn_min_max(np,ctx)
     ]
 
     all_effects_led_pannel = [
@@ -294,7 +327,7 @@ def main():
 
         if (last_switched + 60000) < time.ticks_ms():
 
-            sleep(200)
+            sleep(100)
             context = None
             contextLedPanel = None
             index += 1
