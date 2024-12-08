@@ -19,26 +19,30 @@ def main():
     green=(0,255,0)
     # odsud
     
+    while True:
+        np[5] = yellow
+        np.show()  
+        sleep(1000)
+        np[4] = orange
+        np.show()  
+        sleep(1000)
+        np[3]=  red
+        np.show()  
+        sleep(1000)
+        np[2]=  green
+        np.show()  
+        sleep(1000)        
+        np[1]=  purple
+        np.show()  
+        sleep(1000)
+        np[0]=  blue
+        np.show()  
+        sleep(8000)
+        np.clear()
+        np.show()
 
 
-    np[0]=  blue
-    np.show()  
-    sleep(1000)
-    np[1]=  purple
-    np.show()  
-    sleep(1000)
-    np[2]=  green
-    np.show()  
-    sleep(1000)    
-    np[3]=  red
-    np.show()  
-    sleep(1000)
-    np[4] = orange
-    np.show()  
-    sleep(1000)
-    np[5] = yellow
-    np.show()  
-    sleep(1000)
+
     # sem
     
     np.show()   
