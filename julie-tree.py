@@ -15,13 +15,30 @@ def main():
     orange = (255,69,0)
     blue  = (0,0,255)
     red   =(255,0,0)
+    purple=(128,0,128)
+    green=(0,255,0)
     # odsud
     
-    np[4] = orange
-    np[5] = yellow
+
+
     np[0]=  blue
+    np.show()  
+    sleep(1000)
+    np[1]=  purple
+    np.show()  
+    sleep(1000)
+    np[2]=  green
+    np.show()  
+    sleep(1000)    
     np[3]=  red
-    
+    np.show()  
+    sleep(1000)
+    np[4] = orange
+    np.show()  
+    sleep(1000)
+    np[5] = yellow
+    np.show()  
+    sleep(1000)
     # sem
     
     np.show()   
