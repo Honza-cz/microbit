@@ -243,13 +243,54 @@ def burn_min_max(np, context):
         np.show()
 
         if (single_color>254):
-            mode = mode_inc
-        if (single_color<1):
             mode = mode_dec
+        if (single_color<1):
+            mode = mode_inc
             color_burn=random_color_picker()
 
     return (last_time_tick, delay, single_color, mode, color_burn)
+    
+def snake_burn_min_max(np, context):
 
+    random_color_picker = lambda : main_colors[random.randint(0,len(main_colors)-1)]
+    mode_inc=1
+    mode_dec=-1
+    if not context:
+        context = (0, 0, 0, 1, random_color_picker(),0)
+
+    last_time_tick, delay, single_color, mode, color_burn, diod_index = context
+    current_time_ms = time.ticks_ms()
+
+    if (current_time_ms>last_time_tick+delay):
+        last_time_tick=current_time_ms
+        
+        rate = lambda idx: color_burn[idx]/255
+        single_color= single_color + mode
+        
+        single_color_or_none = lambda idx :math.ceil(single_color*rate(idx))
+        
+        color = (single_color_or_none(0), single_color_or_none(1), single_color_or_none(2))
+        np[diod_index] = color
+ 
+
+        if (single_color>254):
+            diod_index=diod_index+1
+            single_color=0
+        if diod_index>0:
+            cc=np[diod_index-1]
+            dec_till_zero= lambda idx: math.floor(cc[idx]-1) if cc[idx]>0 else cc[idx]
+            np[diod_index-1]= (dec_till_zero(0), dec_till_zero(1), dec_till_zero(2))
+        if len(np) == diod_index:
+            diod_index=0
+            single_color=0            
+            color_burn = random_color_picker()
+            for i in range(len(np)):
+                np[i]=(0,0,0)
+
+        np.show()              
+            
+
+    return (last_time_tick, delay, single_color, mode, color_burn, diod_index)
 
 def light_on_one_by_one(context):
     if not context:
@@ -315,7 +356,8 @@ def main():
         lambda ctx: glow(np, ctx),
         lambda ctx: glow_colored(np, ctx),
         lambda ctx: basic(np, ctx, main_colors + [(0, 0, 0)]),
-        lambda ctx: burn_min_max(np,ctx)
+        lambda ctx: burn_min_max(np,ctx),
+        lambda ctx: snake_burn_min_max(np,ctx)
     ]
 
     all_effects_led_pannel = [
