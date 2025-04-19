@@ -27,15 +27,25 @@ should_show_temp = False
 too_hot = False
 too_cold = False
 scroll_delay = 120
+input_mode='M'
+increment = 60
+
 while True:
     if pin_logo.is_touched():
         setup_mode = time.ticks_ms()
 
-    if (setup_mode + 30000) > time.ticks_ms():
-        display.show("S")
-        increment = 60
+    if (setup_mode + 10000) > time.ticks_ms():
+        display.show(input_mode)  
         if pin_logo.is_touched():
-            increment = increment * 60
+            if input_mode == 'M':
+                increment = increment * 60
+                input_mode = 'H'
+                sleep(300)
+            elif input_mode == 'H':
+                increment = increment / 60
+                input_mode = 'M'
+                sleep(300)
+
         if button_a.was_pressed():
             abs_last_timestamp += increment
         elif button_b.was_pressed():
@@ -53,9 +63,10 @@ while True:
         diff = time.ticks_diff(now, last_tick)
         last_tick = now
         seconds = diff / 1000 + abs_last_timestamp
+        abs_last_timestamp = seconds
         h = floor(seconds / 3600)
         m = (seconds - h * 3600) // 60
-        abs_last_timestamp = seconds
+               
         display.scroll(str(h % 24) + ":" + "{:02d}".format(int(m)), delay=scroll_delay)
 
         if should_show_temp:
