@@ -3,7 +3,6 @@ import time
 from math import *
 import speech
 
-
 def show_temp(too_hot, too_cold, scroll_delay):
     if show_temp:
         display.scroll(str(temperature()) + 'C', delay=scroll_delay)
@@ -20,8 +19,8 @@ def show_temp(too_hot, too_cold, scroll_delay):
     return too_hot, too_cold
 
 
-last_tick = time.ticks_ms()
-abs_last_timestamp = (00 * 3600) + (00 * 60)
+started = time.ticks_ms()
+user_time = (00 * 3600) + (00 * 60)
 setup_mode = 0
 should_show_temp = False
 too_hot = False
@@ -47,9 +46,9 @@ while True:
                 sleep(300)
 
         if button_a.was_pressed():
-            abs_last_timestamp += increment
+            user_time += increment
         elif button_b.was_pressed():
-            abs_last_timestamp -= increment
+            user_time -= increment
     else:
         if button_a.was_pressed():
             should_show_temp = not should_show_temp
@@ -60,10 +59,9 @@ while True:
                 scroll_delay = 120
 
         now = time.ticks_ms()
-        diff = time.ticks_diff(now, last_tick)
-        last_tick = now
-        seconds = diff / 1000 + abs_last_timestamp
-        abs_last_timestamp = seconds
+        since_started_sec = time.ticks_diff(now, started) / 1000                
+        seconds = since_started_sec + user_time
+        
         h = floor(seconds / 3600)
         m = (seconds - h * 3600) // 60
                
